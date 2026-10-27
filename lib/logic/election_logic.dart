@@ -41,6 +41,12 @@ String bannerText(List<Candidate> list) {
   return 'Tie between $names ($top votes each)';
 }
 
+class VoteRecord {
+  final String voter;
+  final Candidate candidate;
+  VoteRecord({required this.voter, required this.candidate});
+}
+
 /// Holds all the data. Screens listen to it, so every change shows everywhere.
 class Election extends ChangeNotifier {
   final List<Candidate> candidates = [
@@ -49,13 +55,19 @@ class Election extends ChangeNotifier {
     Candidate(name: 'Eric'),
   ];
   final List<String> voters = [];
+  final List<VoteRecord> voteHistory = [];
+  int classSize = 30;
 
   int get totalVotes => voters.length;
 
   bool hasVoted(String cleaned) => voters.contains(cleaned);
 
+  void setClassSize(int size) {
+    classSize = size < 0 ? 0 : size;
+    notifyListeners();
+  }
+
   /// Returns an error message, or null if the vote was counted.
-  /// All checks happen first; nothing changes if one fails.
   String? castVote(String rawName, Candidate candidate) {
     final voter = cleanName(rawName);
     if (voter.isEmpty) return 'Please type your name';
@@ -63,6 +75,17 @@ class Election extends ChangeNotifier {
 
     voters.add(voter);
     candidate.votes++;
+    voteHistory.add(VoteRecord(voter: voter, candidate: candidate));
+    notifyListeners();
+    return null;
+  }
+
+  /// Undo the last cast vote.
+  String? undoLastVote() {
+    if (voteHistory.isEmpty) return 'No votes to undo';
+    final last = voteHistory.removeLast();
+    voters.remove(last.voter);
+    last.candidate.votes--;
     notifyListeners();
     return null;
   }
@@ -91,6 +114,7 @@ class Election extends ChangeNotifier {
       c.votes = 0;
     }
     voters.clear();
+    voteHistory.clear();
     notifyListeners();
   }
 }
