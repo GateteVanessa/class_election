@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/candidate.dart';
 
 /// Lab 4: trim, collapse spaces, Title Case.
@@ -116,5 +120,75 @@ class Election extends ChangeNotifier {
     voters.clear();
     voteHistory.clear();
     notifyListeners();
+  }
+
+  // ---------------- Part 2: saving on the phone ----------------
+
+  /// Every change already calls notifyListeners(), so saving here means
+  /// add, vote, undo, delete, reset and class size are ALL saved.
+  @override
+  void notifyListeners() {
+    super.notifyListeners();
+    save();
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'candidates': candidates.map((c) => c.toJson()).toList(),
+      'voters': voters,
+      'history': voteHistory
+          .map((v) => {'voter': v.voter, 'candidate': v.candidate.name})
+          .toList(),
+      'classSize': classSize,
+    };
+  }
+
+  Future<void> save() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('election', jsonEncode(toJson()));
+  }
+
+  /// Called once when the app opens. The first time there is nothing saved,
+  /// so the three sample candidates stay.
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('election');
+    if (saved == null) return;
+
+    try {
+      final data = jsonDecode(saved) as Map<String, dynamic>;
+
+      final loadedCandidates = (data['candidates'] as List)
+          .map((x) => Candidate.fromJson(x as Map<String, dynamic>))
+          .toList();
+      final loadedVoters =
+      (data['voters'] as List).map((x) => x as String).toList();
+
+      final loadedHistory = <VoteRecord>[];
+      for (final x in data['history'] as List) {
+        final m = x as Map<String, dynamic>;
+        final matches = loadedCandidates.where((c) => c.name == m['candidate']);
+        if (matches.isNotEmpty) {
+          loadedHistory.add(
+            VoteRecord(voter: m['voter'] as String, candidate: matches.first),
+          );
+        }
+      }
+      final loadedSize = (data['classSize'] as num).toInt();
+
+      // Only now, when everything was read well, replace the data.
+      candidates
+        ..clear()
+        ..addAll(loadedCandidates);
+      voters
+        ..clear()
+        ..addAll(loadedVoters);
+      voteHistory
+        ..clear()
+        ..addAll(loadedHistory);
+      classSize = loadedSize;
+    } catch (e) {
+      // Damaged saved text: keep the sample data instead of crashing.
+    }
   }
 }

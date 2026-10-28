@@ -1,22 +1,40 @@
-# Class Election App
+# Ijwi: Class Election
 
-Built on Labs 4, 8, and 9.
+A Flutter app where the class elects its representative: names are cleaned, every voter votes only once, the results are ranked, and a tie is never shown as a fake winner.
 
-## Features
-- **Vote Screen**: Type voter name and cast a vote for any candidate. Includes an option to undo the last vote.
-- **Results Screen**: Displays ranked candidates, vote counts, percentage of total votes (1 decimal place), progress bars, winner/tie banner, and class turnout calculation based on configurable class size.
-- **Candidates Screen**: Add new candidates or remove candidates who have zero votes. Reset all votes with confirmation.
+My data is now saved on the phone with shared_preferences, so nothing is lost when the app closes, and it shows today's weather in Kigali from the Open-Meteo API.
 
----
+## Screenshots
 
-## 思考 (Reflection Questions)
+![Before closing](screenshots/before.png)
 
-### 1. Why must names be cleaned before they are compared? Give an example of what goes wrong otherwise.
-Names must be cleaned (trimming whitespace, collapsing multiple spaces into a single space, and converting to Title Case) before they are compared or stored to ensure uniqueness and prevent duplicate entries caused by typos or formatting differences.
-- **Example of what goes wrong otherwise**: If User A votes as `"  aline  "` and later tries to vote again as `"ALINE"` or `"Aline"`, without cleaning and case-normalization, the system would treat them as two different voters and allow User A to vote multiple times. Cleaning ensures that variations like `" aLINE "` and `"Aline"` normalize to `"Aline"` and are correctly recognized as already having voted.
+![After running again](screenshots/after.png)
 
-### 2. How does your app decide between a winner and a tie? Explain it in plain words.
-The app first checks the total number of votes. If no votes have been cast, it displays "No votes yet".
-When votes exist, it finds the maximum number of votes received by any candidate in the election. It then filters all candidates to see how many have that exact maximum score:
-- **Winner**: If exactly one candidate has the highest score, that candidate is declared the winner (`Winner: [Name]`).
-- **Tie**: If two or more candidates share the highest score, all tied candidates are listed together along with their vote count (`Tie between [Name1] and [Name2] ([X] votes each)`).
+![Live data from an API](screenshots/api.png)
+
+![No internet](screenshots/no-internet.png)
+
+## What it does
+
+- **Vote**: type your name and tap Vote on a candidate. Names are cleaned (`  aLINE ` becomes `Aline`), and each voter can vote only once. You can undo the last vote.
+- **Results**: candidates ranked from the most votes to the fewest, with votes, a percentage with one decimal and a bar. A banner shows the winner or the tie, or "No votes yet". The turnout is shown against the class size.
+- **Candidates**: add a candidate (not empty, not a duplicate), remove one who has no votes, or reset all votes after an "Are you sure?" question.
+- **Saved on the phone**: the candidates, every vote, who already voted and the class size are saved after every change and loaded when the app opens.
+- **Live API**: the Vote screen shows today's weather in Kigali from Open-Meteo, with three states: a spinner while loading, an error message with a Retry button when there is no internet, and the data.
+
+## Think
+
+**1. Why must names be cleaned before they are compared? Give an example of what goes wrong otherwise.**
+
+A computer compares text letter by letter, so `aline`, ` ALINE ` and `Aline` are three different texts, even though they are the same person. Without cleaning, someone who already voted as `Aline` could type ` aLINE ` and vote a second time. The same happens for candidates: `keza` could be added next to `Keza` and the votes would be split between two entries. After cleaning (trim the ends, remove extra spaces, Title Case), they all become `Aline` or `Keza`, so they compare as equal.
+
+**2. How does your app decide between a winner and a tie?**
+
+It first finds the highest number of votes that any candidate has. Then it collects every candidate who has exactly that number. If only one candidate is in that group, that candidate is the winner. If there are two or more, nobody wins alone, so the banner says "Tie between ..." with their names and the shared score. With no votes at all, the banner says "No votes yet".
+
+## Run it
+
+```
+flutter pub get
+flutter run
+```
